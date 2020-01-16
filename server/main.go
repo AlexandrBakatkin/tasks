@@ -64,7 +64,7 @@ func handleConnection(conn net.Conn, pers *[]person.Person, tasks *map[string]pe
 			addTask(executor, task, pers, tasks)
 
 		case "shwtask":
-			conn.Write([]byte("Command showtask..."))
+			showTask(conn, tasks)
 		case "shwuser":
 			showUsers(pers, conn)
 		case "end":
@@ -74,8 +74,17 @@ func handleConnection(conn net.Conn, pers *[]person.Person, tasks *map[string]pe
 	}
 }
 
+func showTask(conn net.Conn, tasks *map[string]person.Task) {
+	var s string
+	for _, t := range *tasks {
+		s = s + t.Text + "|"
+	}
+	s = s + "/n"
+	conn.Write([]byte(s))
+}
+
 func addTask(executor string, task string, pers *[]person.Person, tasks *map[string]person.Task) {
-	t := make(map[string]person.Task)
+	t := *tasks
 	for _, n := range *pers {
 		if n.Name == executor {
 			t[executor] = person.Task{Text: task, Performer: n}
