@@ -62,7 +62,6 @@ func handleConnection(conn net.Conn, pers *[]person.Person, tasks *map[string]pe
 			task := string(input[0:n])
 			fmt.Println(task)
 			addTask(executor, task, pers, tasks)
-			//addTask()
 
 		case "shwtask":
 			conn.Write([]byte("Command showtask..."))
@@ -76,11 +75,13 @@ func handleConnection(conn net.Conn, pers *[]person.Person, tasks *map[string]pe
 }
 
 func addTask(executor string, task string, pers *[]person.Person, tasks *map[string]person.Task) {
+	t := make(map[string]person.Task)
 	for _, n := range *pers {
 		if n.Name == executor {
-			//tasks[executor] = person.Task{Text:task, Performer:n}
+			t[executor] = person.Task{Text: task, Performer: n}
 		}
 	}
+	*tasks = t
 }
 
 func close(conn net.Conn) error {
