@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"github.com/Bakatkin/tasks/person"
 	_ "github.com/go-sql-driver/mysql"
-	"net"
 )
 
 func FindUser(user string) bool {
@@ -56,9 +55,8 @@ func AddUser(username string) {
 	}
 }
 
-func ShowUsers(conn net.Conn) {
+func ShowUsers() string {
 	var s string
-
 	db, err := sql.Open("mysql", "root:svpunk@/tasks_db")
 	if err != nil {
 		panic(err)
@@ -76,7 +74,7 @@ func ShowUsers(conn net.Conn) {
 	}
 	defer rows.Close()
 	s = s + "\n"
-	conn.Write([]byte(s))
+	return s
 }
 
 func AddTask(executor person.Person, task string) {
