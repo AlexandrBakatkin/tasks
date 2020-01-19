@@ -2,17 +2,15 @@ package main
 
 import (
 	"fmt"
-	"github.com/Bakatkin/tasks/person"
+	"github.com/Bakatkin/tasks/database"
 	"net"
+	"strconv"
 )
 
 func main() {
 	const (
 		startmsg = "Server is starting..."
 	)
-
-	tasks := make(map[string]person.Task)
-	pers := make([]person.Person, 0)
 	listener, err := net.Listen("tcp", ":4545")
 	if err != nil {
 		fmt.Println(err)
@@ -27,11 +25,11 @@ func main() {
 			conn.Close()
 			continue
 		}
-		go handleConnection(conn, &pers, &tasks)
+		go handleConnection(conn)
 	}
 }
 
-func handleConnection(conn net.Conn, pers *[]person.Person, tasks *map[string]person.Task) {
+func handleConnection(conn net.Conn) {
 	defer close(conn)
 
 	for {
@@ -49,24 +47,31 @@ func handleConnection(conn net.Conn, pers *[]person.Person, tasks *map[string]pe
 			conn.Write([]byte("Enter username:"))
 			n, _ := conn.Read(input)
 			username := string(input[0:n])
-			addUser(username, pers)
+			database.AddUser(username)
 			conn.Write([]byte("OK\n"))
 		case "addtask":
 			conn.Write([]byte("Entering task... Select executor:\n"))
-			showUsers(pers, conn)
+			database.ShowUsers(conn)
 			n, _ := conn.Read(input)
 			executor := string(input[0:n])
 			fmt.Println(executor)
 			conn.Write([]byte("Enter task:\n"))
 			n, _ = conn.Read(input)
 			task := string(input[0:n])
-			fmt.Println(task)
-			addTask(executor, task, pers, tasks)
+			addTask(executor, task)
 
 		case "shwtask":
-			showTask(conn, tasks)
+			showTask(conn)
 		case "shwuser":
-			showUsers(pers, conn)
+			database.ShowUsers(conn)
+		case "getuser":
+			conn.Write([]byte("Enter username:"))
+			n, _ := conn.Read(input)
+			username := string(input[0:n])
+			p, _ := database.GetUser(username)
+			fmt.Println("ID: ", p.ID, "; Name: ", p.Name)
+			str := "ID: " + strconv.Itoa(p.ID) + "; Name: " + p.Name + "\n"
+			conn.Write([]byte(str))
 		case "end":
 			fmt.Println("End")
 			close(conn)
@@ -74,44 +79,17 @@ func handleConnection(conn net.Conn, pers *[]person.Person, tasks *map[string]pe
 	}
 }
 
-func showTask(conn net.Conn, tasks *map[string]person.Task) {
-	var s string
-	for _, t := range *tasks {
-		s = s + t.Text + "|"
-	}
-	s = s + "/n"
-	conn.Write([]byte(s))
+func showTask(conn net.Conn) {
+	conn.Write([]byte(database.AllTasks()))
 }
 
-func addTask(executor string, task string, pers *[]person.Person, tasks *map[string]person.Task) {
-	t := *tasks
-	for _, n := range *pers {
-		if n.Name == executor {
-			t[executor] = person.Task{Text: task, Performer: n}
-		}
+func addTask(executor string, task string) {
+	if database.FindUser(executor) {
+		p, _ := database.GetUser(executor)
+		database.AddTask(p, task)
 	}
-	*tasks = t
 }
 
 func close(conn net.Conn) error {
 	return conn.Close()
-}
-
-func showUsers(pers *[]person.Person, conn net.Conn) {
-	var s string
-	for i, str := range *pers {
-		fmt.Println(str.GetName())
-		if i != 0 {
-			s = str.GetName() + " " + s
-		} else {
-			s = str.GetName()
-		}
-	}
-	s = s + "\n"
-	conn.Write([]byte(s))
-}
-
-func addUser(username string, pers *[]person.Person) {
-	var person = person.Person{Name: username}
-	*pers = append(*pers, person)
 }
